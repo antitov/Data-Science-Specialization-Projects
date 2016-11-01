@@ -1,0 +1,151 @@
+---
+title: "Statistical Inference Course Project part 2"
+author: "Anton Titov"
+date: '5-April-2016 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE, cache=FALSE,  warning=FALSE, results="hide")
+options(scipen = 1, digits = 4)
+```
+
+#1. Overview
+This report will cover the analysis of exponential distribution. We will compare parameters of sample distribution and theoretical one. 
+
+### Assgiment
+Load the ToothGrowth data and perform some basic exploratory data analyses
+Provide a basic summary of the data.
+Use confidence intervals and/or hypothesis tests to compare tooth growth by supp and dose. (Only use the techniques from class, even if there's other approaches worth considering)
+State your conclusions and the assumptions needed for your conclusions.
+Some criteria that you will be evaluated on
+
+##1.1 Basis for the study
+The data for the analysis include 60 observations of length of tooth of guinea pigs. Observations differ by dose of vitamin C (0.5, 1, 2 mg) and delivety method (orange juice or ascorbic acid)
+
+##1.2 Environment
+To make this report reprodusible we should inform about R enviroment.  
+We are loading `data.table` for fast data handling and `ggplot2`. 
+Also we change system time display to English by `Sys.setlocale`.
+```{r Locale and Libraries, results='markup'}
+Sys.setlocale("LC_TIME", "English")
+library(data.table)
+library(ggplot2)
+library(datasets)
+set.seed(1234521)
+
+sessionInfo()
+
+```
+https://rpubs.com/daniambrosio/tooth_growth_exploratory_data_analysis
+
+#2. Data Summary and Exploratory Data Analysis
+Now we perform basic analysis of data
+```{r, results='markup'}
+data("ToothGrowth")
+str(ToothGrowth)
+```
+We can see that `supp` variable is factor of 2 values: OJ and VC.
+
+##2.1 Visual Analysis
+Let us plot mean values of length by dosage.
+```{r}
+means <- aggregate(len~., ToothGrowth, mean)
+g = ggplot(data=data.frame(ToothGrowth), aes(x=dose,y=len))
+g = g + geom_point(aes(color=factor(supp))) + geom_line(data=means, aes(color = supp))
+g = g + labs(y="Tooth Length")
+
+print(g)
+```
+```{r, echo= FALSE}
+dev.off()
+```
+Next the same data will be shown as boxplots.
+```{r}
+g = ggplot(data=data.frame(ToothGrowth), aes(x=dose,y=len))
+g = g + geom_boxplot(aes(fill=factor(dose))) 
+
+print(g)
+```
+```{r, echo= FALSE}
+dev.off()
+```
+
+Then we explore possible relation between tooth length and delivery method.
+```{r}
+g = ggplot(data=data.frame(ToothGrowth), aes(x=supp,y=len))
+g = g + geom_boxplot(aes(fill=factor(supp)))  
+
+print(g)
+```
+```{r, echo= FALSE}
+dev.off()
+```
+Then we explore possible relation between tooth length and delivery method considering dosage.
+```{r}
+g = ggplot(data=data.frame(ToothGrowth), aes(x=supp,y=len))
+g = g + geom_boxplot(aes(fill=factor(supp))) + facet_wrap(~dose) 
+
+print(g)
+```
+```{r, echo= FALSE}
+dev.off()
+```
+
+Let us conclude visual explaratory analysis. We can see some correlation between dosage and toothgrowth: the more dosage the more tooth length. However we can not say the same about delivery method. Depending on dosage delivery method affects to tooth length in opposite ways.
+
+##2.2 Numeric Analysis
+```{r, results = 'markup'}
+by(ToothGrowth, INDICES = list(ToothGrowth$supp, ToothGrowth$dose), summary)
+```
+#3. Confidence Intervals and Hypothesis Testing
+Since there are three different type of dosage. But T-Test is applied to two group at a time. Therefore, three data set has been created with two different dosage at a time. Our Null hypothesis for each dataset there is no significant effect of dosage on lenght of theth. Which can be interpreted there sample means are equal.
+
+##3.1 Dosage as a Factor
+
+```{r, results = 'markup'}
+Tooth051 <- subset(ToothGrowth, dose %in% c(0.5,1) )
+t.test(len~dose,data = Tooth051 , paired = FALSE, var.equal = TRUE)
+```
+```{r, echo = FALSE}
+ttest_dose051 <- t.test(len~dose,data = Tooth051 , paired = FALSE, var.equal = TRUE)
+```
+Confidense interval between dose `0.5` and `1` equals to `r ttest_dose051$conf.int[1:2]`. That leads to the conclusion that dosage increase in dosage from `0.5` to `1` affects directly to tooth length.
+
+```{r, results = 'markup'}
+Tooth12 <- subset(ToothGrowth, dose %in% c(1,2) )
+t.test(len~dose, data = Tooth12, paired = FALSE, var.equal = TRUE)
+```
+```{r, echo = FALSE}
+ttest_dose12 <- t.test(len~dose,data = Tooth12 , paired = FALSE, var.equal = TRUE)
+```
+Confidense interval between dose `1` and `2` equals to `r ttest_dose12$conf.int[1:2]`. That leads to the conclusion that dosage increase in dosage from `1` to `2` affects directly to tooth length.
+
+```{r, results = 'markup'}
+Tooth052 <- subset(ToothGrowth, dose %in% c(0.5,1) )
+t.test(len~dose, data = Tooth052, paired = FALSE, var.equal = TRUE)
+```
+```{r, echo = FALSE}
+ttest_dose052 <- t.test(len~dose,data = Tooth052 , paired = FALSE, var.equal = TRUE)
+```
+Confidense interval between dose `0.5` and `2` equals to `r ttest_dose052$conf.int[1:2]`. That leads to the conclusion that dosage increase in dosage from `0.5` to `2` affects directly to tooth length.
+
+##3.2 Supplement as a Factor
+```{r, results = 'markup'}
+ t.test(len~supp,data=ToothGrowth, paired = FALSE, var.equal = FALSE)
+```
+```{r, echo = FALSE}
+ttest_supp <- t.test(len~supp,data=ToothGrowth, paired = FALSE, var.equal = FALSE)
+```
+Confidence interval for difference of the means of different delivery methods includes zero: `r ttest_supp$conf.int[1:2]`. So we conclude no correlation between delivery method and tooth growth.
+
+#4. Conclusions and Assumptions
+##4.1 Assumptions
+1. The poplulations are independent, the variances between populations are different and a random population was used
+2. The population was comprised of similar guinea pigs, measurement error was accounted for with significant digits, and double blind research methods were used. This means researchers were unaware which pigs were taking specific dosage using specific delivery method.
+3. For the populations to be independent, 60 guinea pigs would have to be used so each combination of dose level and delivery method were not affected by the other methods.
+
+
+##4.2 Conclusions
+1. Increasing the dosage leads to increased tooth growth.
+2. Delivery method has no relation on tooth growth. 
